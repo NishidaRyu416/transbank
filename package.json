@@ -1,0 +1,25 @@
+{
+  "name": "transbank",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "dependencies": {
+    "bignumber.js": "^7.2.1",
+    "cookie-parser": "~1.4.3",
+    "debug": "~2.6.9",
+    "dotenv": "^6.1.0",
+    "express": "~4.16.0",
+    "http-errors": "~1.6.2",
+    "jade": "~1.11.0",
+    "lisk-elements": "^1.0.0",
+    "morgan": "~1.9.0",
+    "nodemon": "^1.18.4",
+    "pg": "^7.5.0",
+    "pg-hstore": "^2.3.2",
+    "ripple-lib": "^1.0.2",
+    "sequelize": "~4.41.0",
+    "uuid": "^3.3.2"
+  }
+}

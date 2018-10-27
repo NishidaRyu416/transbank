@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "nishidaryu",
+    "password": null,
+    "database": "transbank_development",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "test": {
+    "username": "nishidaryu",
+    "password": null,
+    "database": "transbank_test",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "root",
+    "password": null,
+    "database": "transbank_production",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  }
+}

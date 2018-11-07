@@ -1,6 +1,12 @@
 'use strict';
+require('uuid/v4');
 module.exports = (sequelize, DataTypes) => {
   const wallets = sequelize.define('wallets', {
+    uuid: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      allowNull: false
+    },
     currency: {
       type: DataTypes.STRING,
       allowNull: false

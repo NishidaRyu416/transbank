@@ -1,4 +1,3 @@
-
 const lisk = require('lisk-elements').default;
 const { Mnemonic } = lisk.passphrase;
 const testnetClient = lisk.APIClient.createTestnetAPIClient();
@@ -18,20 +17,20 @@ module.exports.create_account = function () {
     return { address: address, passphrase: passphrase }
 }
 
-module.exports.transfer = function (amount, address, passphrase) {
+module.exports.transfer = function (address, amount, passphrase, data) {
 
     transaction = lisk.transaction.transfer({
         amount: lisk.transaction.utils.convertLSKToBeddows(amount),
         recipientId: address,
-        data: 'Hello Lisk!',
+        data: data,
         passphrase: passphrase
     });
-
-    console.log(transaction)
 
     testnetClient.transactions.broadcast(transaction)
         .then(console.info)
         .catch(console.error);
+
+    return transaction
 }
 
 module.exports.get_balance = function (address) {

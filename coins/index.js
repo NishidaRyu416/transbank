@@ -1,3 +1,5 @@
-exports.module.btc = require('./btc')
-exports.module.lsk = require('./lsk')
-exports.module.xrp = require('./xrp')
+module.exports = {
+    btc: require('./btc'),
+    lsk: require('./lsk'),
+    xrp: require('./xrp')
+}

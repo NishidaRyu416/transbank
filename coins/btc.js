@@ -1,8 +1,9 @@
+var bitcore = require('bitcore-lib');
 
 module.exports.create_account = function () {
-    var private_key = new bitcore.PrivateKey();
+    var private_key = new bitcore.PrivateKey(bitcore.Networks.testnet);
 
-    var address = privateKey.toAddress();
+    var address = private_key.toAddress();
 
     return { address: address, private_key: private_key }
 }

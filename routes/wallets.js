@@ -16,25 +16,33 @@ router.get('/:id', function (req, res, next) {
     });
 });
 
-router.get('/:id/get_new_address', function (req, res, next) {
-    var { address, private_key } = address_service.create_new_address(req.query.currency, req.query.wallet_id)
-    models.address.create({
-        walletId: req.params.id,
-        currency: req.query.currency,
-        address: address,
-        private_key: private_key
-
-    })
+router.get('/:id/new_address', function (req, res, next) {
+    wallet = models.wallets.findOne({ where: { uuid: req.params.id } }).then(wallet => {
+        var { address, private_key } = address_service.create_new_address(wallet.currency)
+        models.addresses.create({
+            walletId: wallet.id,
+            currency: wallet.currency,
+            address: address,
+            private_key: private_key
+        }).then(address => {
+            res.send(address)
+        });
+    });
 });
 
 router.get('/:id/send', function (req, res, next) {
-    models.transactions.create({
-        currency: req.params.id,
-        amount: req.query.amount,
-        address: req.query.address,
-        category: 'send'
+    models.wallets.findOne({ where: { uuid: req.params.id } }).then(wallet => {
+        models.transactions.create({
+            walletId: wallet.id,
+            currency: wallet.currency,
+            amount: req.query.amount,
+            address: req.query.address,
+            category: 'send'
+        }).then(transaction => {
+            res.send(transaction);
+        })
     });
-})
+});
 
 
 

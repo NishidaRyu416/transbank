@@ -5,23 +5,64 @@ var models = require('../models');
 var BigNumber = require('bignumber.js');
 var lsk = require('/lib/lisk.js')
 var xrp = require('/lib/xrp.js')
-
+var security_service = require('../services/security_service')
 function withdraw() {
-    models.Transactions.findAll({ where: { proccessed: false } })
-        .then(transactions => {
-            transactions.forEach(transaction => {
-                if (transaction.get('cuurency') === 'btc') {
-
-
-                } if (transaction.get('currency') === 'xrp') {
-
-                } if (transaction.get('currency') === 'lsk') {
-                    // trnasfer(amount, address, passphrase)
-                    // In lisk, passpharses are considered to be private keys
-                    lsk.transfer(transaction.get('amount'), transaction.get('address'), models.Wallets.findOne.get('private_key'))
-                }
-                transaction.get('address')
-            });
-        })
+    models.Transactions.findAll({ where: { confirmed: false, category: 'send' } }).then(transactions => {
+        transactions.forEach(transaction => {
+            if (transaction.currency === 'btc') {
+                withdraw_btc(transaction.address, transaction.amount, transaction.wallet)
+            }
+            if (transaction.currency === 'lsk') { }
+            if (transaction.currency === 'xrp') { }
+            // trnasfer(amount, address, passphrase)
+            // In lisk, passpharses are considered to be private keys
+        });
+    });
 }
+
+function withdraw_btc(to_address, amount, wallet) {
+
+    var from_address = '';
+
+    wallet.addresses.some(address => {
+        request(process.env.BTC_UTXO_URL + address.address + '/balance',
+            function (error, response) {
+                if (error) {
+
+                } else {
+                    if (response > amount) {
+                        from_address = address;
+                        return true;
+                    }
+                }
+            });
+    });
+
+    var private_key = new bitcore.PrivateKey(security_service.decrypt(from_address.private_key), bitcore.Networks.testnet);
+
+    var source_address = private_key.toAddress();
+
+    insight.getUnspentUtxos(source_address, function (e, utxos) {
+        if (e) {
+            console.log(e);
+        } else {
+            console.log(utxos);
+            var transaction = new bitcore.Transaction()
+                .from(utxos)
+                .to(to_address, bitcore.Unit.fromBTC(bg(amount)).toSatoshis)
+                .change(chnage_address)
+                .sign(private_key);
+
+            insight.broadcast(transaction, function (e, txid) {
+                if (e) {
+
+                } else {
+
+                    res.send({ txid: txid });
+                }
+            });
+        };
+    });
+};
+
 

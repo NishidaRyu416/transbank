@@ -14,6 +14,7 @@ module.exports.create_account = function () {
         const { privateKey, publicKey } = lisk.cryptography.getKeys(passphrase);
         address = lisk.cryptography.getAddressFromPublicKey(publicKey);
     }
+
     return { address: address, passphrase: passphrase }
 }
 
@@ -34,6 +35,10 @@ module.exports.transfer = function (address, amount, passphrase, data) {
 }
 
 module.exports.get_balance = function (address) {
+
+}
+
+module.exports.get_tx = function (txid) {
 
 }
 // 3540555160147702300L

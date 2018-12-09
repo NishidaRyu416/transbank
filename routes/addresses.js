@@ -2,8 +2,6 @@ var express = require('express');
 var router = express.Router();
 var bg = require('bignumber.js');
 var models = require('../models');
-var explorers = require('bitcore-explorers');
-var insight = new explorers.Insight('testnet');
 var address_service = require('../services/address_service')
 var request = require('request');
 require('dotenv').config();
@@ -93,18 +91,20 @@ router.get('/:id/get_utxos', function (req, res, next) {
 /*
 */
 router.get('/get_utxos', function (req, res, next) {
+    var vout = [];
+    var txid = [];
+    amount = new bg('0');
     request(process.env.BTC_UTXO_URL + req.query.address + '/utxo',
         function (error, response) {
             if (error) {
 
             } else {
-                var txid = [];
-                amount = new bg('0');
                 JSON.parse(response.body).forEach(utxo => {
                     amount = amount.plus(utxo.amount);
                     txid.push(utxo.txid);
+                    vout.push(utxo.vout)
                 });
-                res.send({ amount: amount, txid: txid });
+                res.send({ vout: vout, amount: amount, txid: txid });
             }
         });
 });

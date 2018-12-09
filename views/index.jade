@@ -1,5 +1,72 @@
-extends layout
 
-block content
-  h1= title
-  p Welcome to #{title}
+html
+  head
+    meta(charset='utf-8')
+    title SkyWay - Broadcast example
+    link(rel='stylesheet', href='style.css')
+    script(type='text/javascript', src='//ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js')
+    script(type='text/javascript', src='//cdn.webrtc.ecl.ntt.com/skyway-latest.js')
+  body
+    .pure-g
+      // Video area
+      #video-container.pure-u-2-3
+        video#video(autoplay='', playsinline='')
+      // Steps
+      .pure-u-1-3
+        h2 SkyWay Video BroadCast (P2P)
+        // Get local audio/video stream
+        #step1
+          p
+            | Your id: 
+            span#my-id ...
+          p If you are broadcaster, just click Broadcast button and wait for participants.
+          form#broadcast.pure-form
+            button.pure-button.pure-button-success(href='#', type='submit') Broadcast
+          p
+            | If you want to watch broadcasting, enter broadcaster's peer ID and click Watch button.
+          form#watch.pure-form
+            input#callto-id(type='text', placeholder='Call user id...')
+            button.pure-button.pure-button-success(href='#', type='submit') Watch
+    script.
+      $(function () {
+      // Peer object
+      const peer = new Peer ('1',{key:'4ba2e064-2118-430b-8e8b-ae4584d80cba',debug: 3})
+      let localStream;
+      peer.on('open', () => {
+      $('#my-id').text(peer.id);
+      });
+      // Receiving a call
+      peer.on('call', call => {
+      // Answer the call automatically (instead of prompting user) for demo purposes
+      call.answer(localStream);
+      });
+      peer.on('error', err => {
+      alert(err.message);
+      });
+      // Click handlers setup
+      $('#broadcast').on('submit', e => {
+      e.preventDefault();
+      navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(stream => {
+      $('#video').get(0).srcObject = stream;
+      localStream = stream;
+      }).catch(err => {
+      $('#step1-error').show();
+      console.error(err);
+      });
+      });
+      $('#watch').on('submit', e => {
+      e.preventDefault();
+      // Initiate a call!
+      console.log($('#callto-id').val());
+      const call = peer.call($('#callto-id').val());
+      // Wait for stream on the call, then set peer video display
+      call.on('stream', stream => {
+      const el = $('#video').get(0);
+      el.srcObject = stream;
+      el.play();
+      });
+      call.on('close', () => {
+      console.log('connection closed');
+      });
+      });
+      });

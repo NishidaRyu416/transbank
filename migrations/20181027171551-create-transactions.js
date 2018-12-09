@@ -23,6 +23,9 @@ module.exports = {
       txid: {
         type: Sequelize.STRING
       },
+      vout: {
+        type: Sequelize.INTEGER
+      },
       fee: {
         type: Sequelize.STRING
       },

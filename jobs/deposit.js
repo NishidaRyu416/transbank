@@ -1,7 +1,9 @@
 var models = require('../models');
 var explorers = require('bitcore-explorers');
 var insight = new explorers.Insight('testnet');
+
 var minimum_confirmations = { 'btc': 5, 'lsk': 10, 'xrp': 5 }
+
 models.addresses.findAll().then(addresses => {
     addresses.forEach(address => {
 
@@ -40,24 +42,25 @@ function btc_deposit(address) {
         else {
             utxos.forEach(utxo => {
                 models.transactions.findOne({ where: { txid: utxo.txid, currency: 'btc' } }).then(transaction => {
-                    if (transaction !== null) {
+                    if (transaction != null) {
                         console.log('duplicated')
                     }
                     else {
-                        if (confirmations >= minimum_confirmations[currency]) {
+                        if (confirmations >= minimum_confirmations['btc']) {
                             models.transactions.create({
-                                currency: currency,
-                                txid: utxo,
-                                amount: amount,
-                                confirmations: confirmations,
-                                address: address,
+                                currency: 'btc',
+                                txid: utxo.txid,
+                                vout: utxo.vout,
+                                amount: utxo.amount,
+                                confirmations: utxo.confirmations,
+                                address: utxo.address,
                                 category: 'receive',
                                 confirmed: true
                             });
                         }
                         else {
                             models.transactions.create({
-                                currency: currency,
+                                currency: 'btc',
                                 txid: utxo,
                                 amount: amount,
                                 confirmations: confirmations,

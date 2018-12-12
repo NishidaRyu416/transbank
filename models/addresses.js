@@ -23,7 +23,7 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {});
   addresses.associate = function (models) {
-    models.addresses.hasMany(models.transactions);
+    models.addresses.belongsTo(models.wallets);
   };
   return addresses;
 };

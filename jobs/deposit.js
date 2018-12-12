@@ -1,97 +1,38 @@
 var models = require('../models');
-var explorers = require('bitcore-explorers');
-var insight = new explorers.Insight('testnet');
+var depsoit = require('../lib/deposit')
 
-var minimum_confirmations = { 'btc': 5, 'lsk': 10, 'xrp': 5 }
+
 
 models.addresses.findAll().then(addresses => {
     addresses.forEach(address => {
 
         if (address.currency === 'btc') {
-            btc_deposit(address.address);
+            depsoit.deposit_btc(address.address);
         }
 
         if (address.currency === 'lsk') {
-            lsk_deposit(address.address);
+            depsoit.deposit_lsk(address.address);
         }
 
         if (address.currency === 'bch') {
-            bch_deposit(address.address);
+            depsoit.deposit_bch(address.address);
         }
 
         if (address.currency === 'ltc') {
-            ltc_deposit(address.address);
+            depsoit.deposit_ltc(address.address);
         }
 
         if (address.currency === 'eth') {
-            eth_deposit(address.address)
+            depsoit.deposit_eth(address.address)
         }
 
         if (address.currency === 'erc20') {
-            erc20_deposit(address.address)
+            depsoit.deposit_erc20(address.address)
         }
     });
 });
 
 
-function btc_deposit(address) {
-    insight.getUnspentUtxos(address, function (e, utxos) {
-        if (e) {
-            console.log(e)
-        }
-        else {
-            utxos.forEach(utxo => {
-                models.transactions.findOne({ where: { txid: utxo.txid, currency: 'btc' } }).then(transaction => {
-                    if (transaction != null) {
-                        console.log('duplicated')
-                    }
-                    else {
-                        if (confirmations >= minimum_confirmations['btc']) {
-                            models.transactions.create({
-                                currency: 'btc',
-                                txid: utxo.txid,
-                                vout: utxo.vout,
-                                amount: utxo.amount,
-                                confirmations: utxo.confirmations,
-                                address: utxo.address,
-                                category: 'receive',
-                                confirmed: true
-                            });
-                        }
-                        else {
-                            models.transactions.create({
-                                currency: 'btc',
-                                txid: utxo,
-                                amount: amount,
-                                confirmations: confirmations,
-                                address: address,
-                                category: 'receive',
-                                confirmed: false
-                            });
-                        }
-                    }
-                });
-            });
-        };
-    });
-};
 
 
-function ltc_deposit(address) {
 
-}
-
-function lsk_deposit(address) {
-
-}
-function bch_deposit(address) {
-
-}
-
-function eth_deposit(address) {
-
-}
-
-function erc20_deposit(address) {
-
-}

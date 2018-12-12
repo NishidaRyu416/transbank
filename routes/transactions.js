@@ -3,12 +3,9 @@ var models = require('../models');
 var router = express.Router();
 
 router.get('/', function (req, res, next) {
-    models.Transactions.findAll.then(trnasactions =>{
+    models.transactions.findAll().then(transactions => {
         res.send(transactions);
-    });
+    })
 });
 
-router.get('',function(req, res, next){
-    
-});
 module.exports = router;

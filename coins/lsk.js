@@ -1,9 +1,8 @@
 const lisk = require('lisk-elements').default;
 const { Mnemonic } = lisk.passphrase;
-const testnetClient = lisk.APIClient.createTestnetAPIClient();
+
 
 // transfer('0.11', '13730060744463677832L', 'chicken notable art clever situate media pen silk all industry flower share');
-
 
 
 module.exports.create_account = function () {
@@ -16,22 +15,6 @@ module.exports.create_account = function () {
     }
 
     return { address: address, passphrase: passphrase }
-}
-
-module.exports.transfer = function (address, amount, passphrase, data) {
-
-    transaction = lisk.transaction.transfer({
-        amount: lisk.transaction.utils.convertLSKToBeddows(amount),
-        recipientId: address,
-        data: data,
-        passphrase: passphrase
-    });
-
-    testnetClient.transactions.broadcast(transaction)
-        .then(console.info)
-        .catch(console.error);
-
-    return transaction
 }
 
 module.exports.get_balance = function (address) {

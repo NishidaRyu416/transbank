@@ -5,7 +5,6 @@ module.exports.create_new_address = function (currency) {
 
     if (currency === 'btc') {
         let { address, private_key } = coins.btc.create_account();
-        console.log(address, private_key)
         return { address: address, private_key: security_service.encrypt(private_key) }
     }
 
@@ -18,7 +17,6 @@ module.exports.create_new_address = function (currency) {
     }
     if (currency === 'eth') {
         let { address, private_key } = coins.eth.create_account();
-        console.log(address, private_key)
         return { address: address, private_key: security_service.encrypt(private_key) }
     }
 }

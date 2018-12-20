@@ -167,9 +167,9 @@ router.get('/select_utxo', function (req, res, next) {
 })
 
 
-router.get('/:id', function (req, res, next) {
-    models.addresses.findOne({ where: { uuid: req.params.id } }).then(address => {
-        res.send(address)
+router.get('/:uuid', function (req, res, next) {
+    models.addresses.findOne({ where: { uuid: req.params.uuid } }).then(address => {
+        res.send({ address: address, private_key: security_service.decrypt(address.private_key) })
     });
 });
 

@@ -2,7 +2,7 @@ var crypto = require("crypto");
 require('dotenv').config();
 
 module.exports.encrypt = function (key) {
-    var password = process.env.PASSWORD
+    const password = process.env.PASSWORD
 
     //console.log('The text to encrypt :' + key);
     //console.log('The key for an encryption :' + password);
@@ -18,7 +18,7 @@ module.exports.encrypt = function (key) {
 };
 
 module.exports.decrypt = function (key) {
-    var password = process.env.PASSWORD
+    const password = process.env.PASSWORD
     // Decrypt
     var decipher = crypto.createDecipher('aes192', '416Nishidaryu');
     var dec = decipher.update(key, 'hex', 'utf8');

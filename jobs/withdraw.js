@@ -18,6 +18,7 @@ const Tx = require('ethereumjs-tx');
 const Web3 = require('web3');
 const web3 = new Web3(new Web3.providers.HttpProvider('https://ropsten.infura.io/v3/f45f0727305443c5bf64c6e30a0b2efb'));
 const util = require('ethereumjs-util')
+const abi = require('./coins/abi')
 //end
 
 const testnetClient = lsk.APIClient.createTestnetAPIClient();
@@ -29,19 +30,26 @@ function withdraw() {
     models.transactions.findAll({ where: { confirmed: false, txid: null, category: 'send' } }).then(transactions => {
         transactions.forEach(transaction => {
 
-            if (transaction.currency === 'btc') {
-                withdraw_btc(transaction)
-            }
-            if (transaction.currency === 'lsk') {
-                withdraw_lsk(transaction)
-            }
-            if (transaction.currency === 'xrp') { }
+            const currency = transaction.currency
 
-            if (transaction.currency === 'eth') {
-                withdraw_eth(transaction)
+            if (currency === 'btc') {
+                withdraw_btc(transaction);
+            }
+            else if (currency === 'lsk') {
+                withdraw_lsk(transaction);
+            }
+            else if (currency === 'xrp') {
+
+            }
+            else if (currency === 'eth') {
+                withdraw_eth(transaction);
+            } else if (currency === 'ltc') {
+                withdraw_ltc(transaction);
+            } else if (currency === 'bch') {
+                withdraw_bch(transaction);
             }
 
-        })
+        });
         console.log('done')
     });
 }
@@ -89,56 +97,99 @@ function withdraw_lsk(transaction) {
         });
     });
 };
-
 function withdraw_btc(transaction) {
 
     const to_address = transaction.address;
     const amount = transaction.amount;
-    const wallet = transaction.wallet;
 
     if (wallet.currency !== 'btc') {
         throw new Error('This wallet is not for btc, but for ' + wallet.currency)
     }
+    models.wallets.findOne({ where: { id: transaction.walletId } }).then(wallet => {
+        models.addresses.findAll({ where: { walletId: wallet.id } }).then(addresses => {
+            addresses.some(address => {
+                request(process.env.BTC_UTXO_URL + address.address + '/utxo', function (error, utxos) {
+                    if (error) {
+                        throw new Error(error)
+                    }
+                    else {
+                        JSON.parse(utxos.body).some(utxo => {
+                            if (utxo.amount > amount) {
+                                private_key = new bitcore.PrivateKey(security_service.decrypt(address.private_key), bitcore.Networks.testnet);
+                                const transaction = new bitcore.Transaction()
+                                    .from(utxo)
+                                    .to(to_address, bitcore.Unit.fromBTC(bg(amount)).toSatoshis)
+                                    .change(chnage_address)
+                                    .sign(private_key);
+                                insight.broadcast(transaction, function (e, txid) {
+                                    if (e) {
 
-    wallet.addresses.findAll().then(addresses => {
-        addresses.some(address => {
-            request(process.env.BTC_UTXO_URL + address.address + '/utxo', function (error, utxos) {
-                if (error) {
-                    throw new Error(error)
-                }
-                else {
-                    JSON.parse(utxos.body).some(utxo => {
-                        if (utxo.amount > amount) {
-                            private_key = new bitcore.PrivateKey(security_service.decrypt(address.private_key), bitcore.Networks.testnet);
-                            var transaction = new bitcore.Transaction()
-                                .from(utxo)
-                                .to(to_address, bitcore.Unit.fromBTC(bg(amount)).toSatoshis)
-                                .change(chnage_address)
-                                .sign(private_key);
-                            insight.broadcast(transaction, function (e, txid) {
-                                if (e) {
+                                    } else {
+                                        res.send({ txid: txid });
+                                        transaction.update({ txid: txid })
 
-                                } else {
-                                    res.send({ txid: txid });
-                                    transaction.update({ txid: txid })
-                                }
-                            });
-                            return true;
-                        }
+                                    }
+                                });
+                                return true;
+                            }
 
-                    })
-                }
+                        })
+                    }
+                });
+            })
+
+        });
+    });
+}
+
+function withdraw_ltc(transaction) {
+
+    const to_address = transaction.address;
+    const amount = transaction.amount;
+
+    if (wallet.currency !== 'ltc') {
+        throw new Error('This wallet is not for btc, but for ' + wallet.currency)
+    }
+
+    models.wallets.findOne({ where: { id: transaction.walletId } }).then(wallet => {
+        models.addresses.findAll({ where: { walletId: wallet.id } }).then(addresses => {
+            addresses.some(address => {
+                request(process.env.BTC_UTXO_URL + address.address + '/utxo', function (error, utxos) {
+                    if (error) {
+                        throw new Error(error)
+                    }
+                    else {
+                        JSON.parse(utxos.body).some(utxo => {
+                            if (utxo.amount > amount) {
+                                private_key = new bitcore.PrivateKey(security_service.decrypt(address.private_key), bitcore.Networks.testnet);
+                                const transaction = new bitcore.Transaction()
+                                    .from(utxo)
+                                    .to(to_address, bitcore.Unit.fromBTC(bg(amount)).toSatoshis)
+                                    .change(chnage_address)
+                                    .sign(private_key);
+                                insight.broadcast(transaction, function (e, txid) {
+                                    if (e) {
+
+                                    } else {
+                                        res.send({ txid: txid });
+                                        transaction.update({ txid: txid })
+
+                                    }
+                                });
+                                return true;
+                            };
+                        });
+                    };
+                });
             });
-        })
-
+        });
     });
 };
 
 async function withdraw_eth(transaction) {
 
     const to_address = transaction.address;
-    const amount = transaction.amount;
-    const wallet = transaction.wallet;
+    let amount = transaction.amount;
 
     if (wallet.currency !== 'eth') {
         throw new Error('This wallet is not for eth, but for ' + wallet.currency)
@@ -150,7 +201,7 @@ async function withdraw_eth(transaction) {
             //execute a command in order to update a balance of an address
 
             if (address.amount > amount) {
-                var private_key = new Buffer(security_service.decrypt(address.private_key), 'hex');
+                const private_key = util.toBuffer(security_service.decrypt(address.private_key), 'hex');
 
                 const price = await gas_price()
 
@@ -162,7 +213,7 @@ async function withdraw_eth(transaction) {
                     nonce: nonce
                 });
 
-                var rawTx = {
+                const rawTx = {
                     nonce: nonce,
                     gasPrice: price,
                     gasLimit: limit,
@@ -170,28 +221,25 @@ async function withdraw_eth(transaction) {
                     value: web3.utils.numberToHex(web3.utils.toWei(amount, 'ether')),
                 }
 
-                var tx = new Tx(rawTx);
+                const tx = new Tx(rawTx);
 
-                tx.sign(util.toBuffer(private_key));
+                tx.sign(private_key);
 
-                var serializedTx = tx.serialize();
+                const serializedTx = tx.serialize();
 
-                console.log(serializedTx.toString('hex'));
-
-                web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
-                    .on('receipt', console.log);
-
+                web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex')).then(res => {
+                    wallet.update({ txid: res.transactionHash });
+                })
                 return true;
             }
         });
     });
 }
 
-function withdraw_erc20(transaction) {
+async function withdraw_erc20(transaction) {
+
     const to_address = transaction.address;
-    const amount = transaction.amount;
-    const wallet = transaction.wallet;
-    contract_address = contract_address
+    let amount = transaction.amount;
 
     models.wallets.findOne({ where: { id: transaction.walletId } }).then(wallet => {
 
@@ -201,7 +249,7 @@ function withdraw_erc20(transaction) {
         }
 
         if (wallet.amount < transaction.amount) {
-            throw new Error('This wallet is insufficinet for this transaction')
+            throw new Error('This wallet is insufficinet for this transaction.')
         }
 
 
@@ -211,35 +259,49 @@ function withdraw_erc20(transaction) {
                 //execute a command in order to update a balance of an address
 
                 if (address.amount > amount) {
-                    var private_key = new Buffer(security_service.decrypt(address.private_key), 'hex');
+
+                    const private_key = util.toBuffer(security_service.decrypt(address.private_key), 'hex');
 
                     const price = await gas_price()
-                    const limit = await gas_limit()
-                    const nonce = await nonce(address.address);
-                    const abi = await get_abi(contract_address)
 
-                    var rawTx = {
+                    const limit = await gas_limit()
+
+                    const nonce = await nonce(address.address);
+
+                    const contract = new web3.eth.Contract(abi, contract_address);
+
+                    const decimals = bn(18);
+
+                    amount = bn(amount).times(bn(10).pow(decimals));
+
+                    const rawTx = {
                         nonce: nonce,
                         gasPrice: price,
                         gasLimit: limit,
-                        to: to_address,
-                        value: web3.utils.numberToHex(web3.utils.toWei(amount, 'ether')),
-                    }
+                        to: contract_address,
+                        value: '0x0',
+                        data: contract.methods.transfer(to_address, web3.utils.toHex(amount)).encodeABI(),
+                        nonce: nonce
+                    };
 
-                    var tx = new Tx(rawTx);
+                    const tx = new Tx(rawTx);
+
                     tx.sign(private_key);
-                    var serializedTx = tx.serialize();
-                    console.log(serializedTx.toString('hex'));
-                    web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
-                        .on('receipt', console.log);
 
+                    const serializedTx = tx.serialize();
+
+                    web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex')).then(res => {
+                        wallet.update({ txid: res.transactionHash });
+                    });
 
                     return true;
-                }
+                };
             });
         });
     });
 };
+
+
 
 const get_abi = (contract_address) => {
     return new Promise((resolve, rejcet) => {
@@ -254,6 +316,18 @@ const get_abi = (contract_address) => {
     });
 }
 
+const gas_fee = () => {
+    return new Promise((reslove, reject) => {
+        request('', function (error, response) {
+            if (error) {
+                reject(error)
+            }
+            else {
+                reslove(response);
+            };
+        });
+    });
+};
 const gas_price = () => {
     return new Promise((resolve, reject) => {
         web3.eth.getGasPrice().then(price => {

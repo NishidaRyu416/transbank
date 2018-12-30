@@ -6,28 +6,29 @@ var depsoit = require('../lib/deposit')
 models.addresses.findAll().then(addresses => {
     addresses.forEach(address => {
 
-        if (address.currency === 'btc') {
-            depsoit.deposit_btc(address.address);
+        const currency = address.currency;
+
+        if (currency === 'btc') {
+            depsoit.deposit_btc(address);
         }
 
-        if (address.currency === 'lsk') {
-            depsoit.deposit_lsk(address.address);
+        else if (currency === 'lsk') {
+            depsoit.deposit_lsk(address);
         }
 
-        if (address.currency === 'bch') {
-            depsoit.deposit_bch(address.address);
+        else if (currency === 'bch') {
+            depsoit.deposit_bch(address);
         }
 
-        if (address.currency === 'ltc') {
-            depsoit.deposit_ltc(address.address);
+        else if (currency === 'ltc') {
+            depsoit.deposit_ltc(address);
         }
 
-        if (address.currency === 'eth') {
-            depsoit.deposit_eth(address.address)
+        else if (currency === 'eth') {
+            depsoit.deposit_eth(address)
         }
-
-        if (address.currency === 'erc20') {
-            depsoit.deposit_erc20(address.address)
+        else if (currency === 'erc20') {
+            depsoit.deposit_erc20(address)
         }
     });
 });

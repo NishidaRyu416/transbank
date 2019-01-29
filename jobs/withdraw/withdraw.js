@@ -1,18 +1,19 @@
 // This job is for withdrawing.
 // This can only be proccessed once per hour for a security reason.
 
-const models = require('../models');
+const models = require('../../models');
 
 const bn = require('bignumber.js');
 
 const deposit = require('.lib/deposit');
 const request = require('request');
 
-const security_service = require('../services/security_service')
+const security_service = require('../../services/security_service')
 
 //start importing coins related stuff
 //lsk
 const lsk = require('lisk-elements').default;
+const testnetClient = lsk.APIClient.createTestnetAPIClient();
 //eth & erc 20
 const Tx = require('ethereumjs-tx');
 const Web3 = require('web3');
@@ -21,7 +22,6 @@ const util = require('ethereumjs-util')
 const abi = require('./coins/abi')
 //end
 
-const testnetClient = lsk.APIClient.createTestnetAPIClient();
 
 
 const erc20 = ['rep', '']
@@ -267,6 +267,10 @@ async function withdraw_erc20(transaction) {
                     const limit = await gas_limit()
 
                     const nonce = await nonce(address.address);
+
+                    const abi = require('./coins/abi')
+
+                    const contract_address
 
                     const contract = new web3.eth.Contract(abi, contract_address);
 

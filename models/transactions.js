@@ -14,6 +14,9 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    vout: {
+      type: DataTypes.INTEGER
+    },
     txid: {
       type: DataTypes.STRING
     },

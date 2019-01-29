@@ -19,6 +19,3 @@ module.exports.create_account = function () {
 
     return { address: address.toString(), private_key: private_key.toString() }
 };
-
-
-

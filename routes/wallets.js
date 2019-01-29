@@ -49,4 +49,5 @@ router.get('/:uuid/send', function (req, res, next) {
 router.get('/', function (req, res, next) {
     models.wallets.findAll().then(wallets => { res.send(wallets) });
 });
+
 module.exports = router;

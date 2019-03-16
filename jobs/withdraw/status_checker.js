@@ -38,17 +38,17 @@ const btc = (transaction) => {
             else {
                 if (JSON.parse(res.body).confirmations > 5) {
 
-                    const confirmed = transaction.confirmed
-
                     transaction.update({
                         confirmations: JSON.parse(res.body).confirmations,
                         confirmed: true
                     }).catch(error => {
-
                         throw new Error(error);
-
-                        if (transaction.confirmations === JSON.parse(res.body).confirmations && transaction.confirmed !== confirmed) {
-
+                    }).then(transaction => {
+                        if (transaction.confirmations === JSON.parse(res.body).confirmations && transaction.confirmed === true) {
+                            console.log('sucessfully updated')
+                        }
+                        else {
+                            console.log('roll back.')
                         }
                     })
 
@@ -72,3 +72,10 @@ const ltc = (transaction) => {
 const eth = (transaction) => {
     request(`${transaction.txid}`)
 }
+const erc20 = (transaction) => {
+    request(`${transaction.txid}`, res => {
+        JSON(res.body)
+    })
+}
+
+export default starter();

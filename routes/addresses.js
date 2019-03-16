@@ -12,20 +12,22 @@ var security_service = require('../services/security_service')
 require('dotenv').config();
 
 router.get('/new', function (req, res, next) {
-
-    models.wallets.findOne({ where: { uuid: req.query.wallet_id } }).then(wallet => {
-        var { address, private_key } = address_service.create_new_address(wallet.currency)
-        models.addresses.create(
-            {
+    models.wallets.findOne({ where: { uuid: req.query.wallet_id } })
+        .then(wallet => {
+            var { address, private_key } = address_service.create_new_address(wallet.currency)
+            models.addresses.create({
                 walletId: wallet.id,
                 currency: wallet.currency,
                 address: address,
                 private_key: private_key
-            }
-        ).then(address => {
-            res.send(address)
+            })
+                .then(address => {
+                    res.send(address)
+                });
+        })
+        .catch(() => {
+            res.send(`We were unable to make an address of the specified wallet of ${req.query.wallet_id} as we could not find the wallet.`)
         });
-    }).catch(error => { console.log(error) });
 });
 
 router.get('/:id/send', function (req, res, next) {

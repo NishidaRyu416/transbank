@@ -40,10 +40,16 @@ module.exports = (sequelize, DataTypes) => {
     category: {
       type: DataTypes.STRING,
       allowNull: false
+    },
+    processed: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false
     }
   }, {});
   transactions.associate = function (models) {
-    // associations can be defined here
+    models.transactions.belongsTo(models.wallets);
+    models.transactions.hasMany(models.txErrors);
   };
   return transactions;
 };

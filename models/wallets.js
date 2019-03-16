@@ -29,6 +29,7 @@ module.exports = (sequelize, DataTypes) => {
   wallets.associate = function (models) {
     models.wallets.hasMany(models.transactions);
     models.wallets.hasMany(models.addresses);
+    models.wallets.hasMany(models.txErrors);
   };
   return wallets;
 };

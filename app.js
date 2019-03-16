@@ -10,7 +10,7 @@ var usersRouter = require('./routes/users');
 var walletsRouter = require('./routes/wallets')
 var addressesRouter = require('./routes/addresses')
 var transactionsRouter = require('./routes/transactions')
-
+var adminsRouter = require('./routes/admins')
 var app = express();
 
 // view engine setup
@@ -28,6 +28,7 @@ app.use('/users', usersRouter);
 app.use('/wallets', walletsRouter);
 app.use('/addresses', addressesRouter);
 app.use('/transactions', transactionsRouter)
+app.use('/admins', adminsRouter)
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));

@@ -7,7 +7,10 @@ router.get('/', function (req, res, next) {
         res.send(coins)
     })
 });
-
+router.get('/:contractAddress', async function (req, res, next) {
+    const coin = await models.coins.findOne({ where: { contractAddress: req.params.contractAddress } })
+    res.send(coin)
+});
 router.get('/new', function (req, res, next) {
     const { name, minimalConfirmations, fee, contractAddress } = req.query
     models.coins.create({
@@ -16,7 +19,7 @@ router.get('/new', function (req, res, next) {
         fee: fee,
         contractAddress: contractAddress
     }).then(coin => {
-        res.send({ coin })
+        res.send(coin)
     });
 });
 module.exports = router;

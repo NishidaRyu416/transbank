@@ -2,16 +2,14 @@
 // This can only be proccessed once per hour for a security reason.
 
 const models = require('../../models');
-
 const bn = require('bignumber.js');
-
 const deposit = require('../../lib/deposit');
-
-const request = require('request');
-
+const axios = require('axios');
 const security_service = require('../../services/security_service')
-
 //start importing coins related stuff
+const coin_service = require('../../services/coin_service')
+//btc
+const bitcore = require('bitcore-lib')
 //lsk
 const lsk = require('lisk-elements').default;
 const testnetClient = lsk.APIClient.createTestnetAPIClient();
@@ -23,51 +21,35 @@ const util = require('ethereumjs-util')
 const abi = require('../../coins/abi')
 //end
 
-const erc20 = {
-    rep: {
-        address: '0x1985365e9f78359a9B6AD760e32412f4a445E862',
-        decimals: 18
-    },
-    usdt: {
-        address: '',
-        decimals: 10
-    },
-    hrmn: {
-        address: '0xcab43c832D8d7aF0D9e5c20DB0FB43f55b67c05c',
-        decimals: 18
-    }
-}
-
-function withdraw() {
-    models.transactions.findAll({ where: { confirmed: false, processed: false, txid: null, category: 'send' } }).then(transactions => {
-        transactions.forEach(transaction => {
-            const currency = transaction.currency
-
-            if (currency === 'btc') {
-
-                withdraw_btc(transaction);
-            }
-            else if (currency === 'lsk') {
-                withdraw_lsk(transaction);
-            }
-            else if (currency === 'eth') {
-                withdraw_eth(transaction);
-            }
-            else if (erc20[currency]) {
-                withdraw_erc20(transaction);
-            }
-
-            /*else if(currency === 'bch'){
-              withdraw_bch(transaction);
-            }
-             if(currency=== 'ltc'){
-              withdraw_ltc(transaction);
-             }
-              if(currency==='xrp'){
-              }
-          */
+const withdraw = async () => {
+    const supportedCoinsNames = await coin_service.getAllSupportedCoinsNames()
+    models.transactions.findAll({ where: { confirmed: false, processed: false, txid: null, category: 'withdraw' } })
+        .then(transactions => {
+            transactions.forEach(async transaction => {
+                const currency = transaction.currency
+                if (currency === 'btc') {
+                    withdraw_btc(transaction);
+                }
+                else if (currency === 'lsk') {
+                    withdraw_lsk(transaction);
+                }
+                else if (currency === 'eth') {
+                    withdraw_eth(transaction);
+                }
+                else if (supportedCoinsNames.includes(currency)) {
+                    withdraw_erc20(transaction);
+                }
+                /*else if(currency === 'bch'){
+                  withdraw_bch(transaction);
+                }
+                 if(currency=== 'ltc'){
+                  withdraw_ltc(transaction);
+                 }
+                  if(currency==='xrp'){
+                  }
+              */
+            });
         });
-    });
 }
 
 function withdraw_lsk(transaction) {
@@ -121,39 +103,38 @@ function withdraw_btc(transaction) {
     if (wallet.currency !== 'btc') {
         throw new Error('This wallet is not for btc, but for ' + wallet.currency)
     }
-    models.wallets.findOne({ where: { id: transaction.walletId } }).then(wallet => {
-        models.addresses.findAll({ where: { walletId: wallet.id } }).then(addresses => {
-            addresses.some(address => {
-                request(process.env.BTC_UTXO_URL + address.address + '/utxo', function (error, utxos) {
-                    if (error) {
-                        throw new Error(error)
-                    }
-                    else {
-                        JSON.parse(utxos.body).some(utxo => {
-                            if (utxo.amount > amount) {
-                                private_key = new bitcore.PrivateKey(security_service.decrypt(address.private_key), bitcore.Networks.testnet);
-                                const transaction = new bitcore.Transaction()
-                                    .from(utxo)
-                                    .to(to_address, bitcore.Unit.fromBTC(bg(amount)).toSatoshis)
-                                    .change(chnage_address)
-                                    .sign(private_key);
-                                insight.broadcast(transaction, function (e, txid) {
-                                    if (e) {
+    models.wallets.findOne({ where: { id: transaction.walletId }, include: [models.addresses] }).then(wallet => {
+        wallet.addresses.some(address => {
+            axios.get(process.env.BTC_UTXO_URL + address.address + '/utxo')
+                .then(res => {
+                    res.data.forEach(utxo => {
+                        if (utxo.amount > amount) {
+                            const private_key = new bitcore.PrivateKey(security_service.decrypt(address.private_key), bitcore.Networks.testnet);
+                            const signed_tx = new bitcore.Transaction()
+                                .from(utxo)
+                                .to(to_address, bitcore.Unit.fromBTC(bg(amount)).toSatoshis)
+                                .change(chnage_address)
+                                .sign(private_key);
 
-                                    } else {
-                                        res.send({ txid: txid });
-                                        transaction.update({ txid: txid })
+                            axios.post('/send', {
+                                rawtx: signed_tx
+                            })
+                                .then(() => {
+                                    transaction.update({
+                                        processed: true
+                                    })
+                                })
+                                .catch(error => {
+                                    models.txErrors.create({
+                                        walletId: wallet.id,
+                                        transactionId: transaction.id,
+                                        error: error
+                                    })
+                                })
+                        }
 
-                                    }
-                                });
-                                return true;
-                            }
-
-                        })
-                    }
-                });
-            })
-
+                    })
+                })
         });
     });
 }
@@ -214,68 +195,60 @@ function withdraw_erc20(transaction) {
     const to_address = transaction.address;
     let amount = transaction.amount;
 
-    models.wallets.findOne({ where: { id: transaction.walletId } })
-        .then(wallet => {
+    models.wallets.findOne({ where: { id: transaction.walletId }, include: [models.addresses] })
+        .then(async wallet => {
+            if (wallet.amount < transaction.amount) {
+                throw new Error('This wallet is insufficinet for this transaction.')
+            }
+            wallet.addresses.forEach(async address => {
+                deposit.deposit_erc20(address)
+                //execute a command in order to update a balance of an address
 
-            if (erc20[transaction.currency]) {
-                if (wallet.amount < transaction.amount) {
-                    throw new Error('This wallet is insufficinet for this transaction.')
-                }
-                models.addresses.findAll({ where: { walletId: wallet.id } })
-                    .then(addresses => {
-                        addresses.some(async address => {
-                            deposit.deposit_erc20(address)
-                            //execute a command in order to update a balance of an address
+                if (address.amount >= amount && address.address !== transaction.address) {
 
-                            if (address.amount >= amount && address.address !== transaction.address) {
+                    const private_key = util.toBuffer(security_service.decrypt(address.private_key), 'hex');
 
-                                const private_key = util.toBuffer(security_service.decrypt(address.private_key), 'hex');
-                                const price = await gas_price()
+                    const price = await gas_price()
 
-                                const limit = await gas_limit()
+                    const limit = await gas_limit()
 
-                                const nonce = await nonce(address.address);
+                    const nonce = await nonce(address.address);
 
-                                const contract_address = erc20[currency].address;
+                    const contract_address = await coin_service.getTokenByName(transaction.currency).contractAddress;
 
-                                const contract = new web3.eth.Contract(abi, contract_address);
+                    const contract = new web3.eth.Contract(abi, contract_address);
 
-                                const decimals = bn(erc20[currency].decimals);
+                    const decimals = bn(await getTokenDecimalsByName());
 
-                                amount = bn(amount).times(bn(10).pow(decimals));
-                                const rawTx = {
-                                    nonce: nonce,
-                                    gasPrice: price,
-                                    gasLimit: limit,
-                                    to: contract_address,
-                                    value: '0x0',
-                                    data: contract.methods.transfer(to_address, web3.utils.toHex(amount)).encodeABI(),
-                                    nonce: nonce
-                                };
+                    amount = bn(amount).times(bn(10).pow(decimals));
 
-                                const tx = new Tx(rawTx);
+                    const rawTx = {
+                        nonce: nonce,
+                        gasPrice: price,
+                        gasLimit: limit,
+                        to: contract_address,
+                        value: '0x0',
+                        data: contract.methods.transfer(to_address, web3.utils.toHex(amount)).encodeABI(),
+                        nonce: nonce
+                    };
 
-                                tx.sign(private_key);
+                    const tx = new Tx(rawTx);
 
-                                const serializedTx = tx.serialize();
+                    tx.sign(private_key);
 
-                                web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
-                                    .then(res => {
-                                        transaction.update({
-                                            txid: res.transactionHash,
-                                            processed: true
-                                        });
-                                    });
+                    const serializedTx = tx.serialize();
 
-                                return true;
-                            };
+                    web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
+                        .then(res => {
+                            transaction.update({
+                                txid: res.transactionHash,
+                                processed: true
+                            });
                         });
-                    });
-            }
-            else {
-                throw new Error(`This wallet is not for supported erc20 tokens, but for` + transaction.currency)
-            }
 
+                    return true;
+                };
+            });
         });
 };
 

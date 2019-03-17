@@ -8,7 +8,7 @@ const supportedCoins = ['btc', 'eth', 'lsk', 'hrmn', 'rep', 'usdt']
 router.get('/new', function (req, res, next) {
     if (supportedCoins.includes(req.query.currency)) {
         models.wallets.create({ currency: req.query.currency }).then(wallet => {
-            res.send({ wallet })
+            res.send(wallet)
         });
     } else {
         res.send('You are making a wallet of an unspported coin.')
@@ -16,26 +16,25 @@ router.get('/new', function (req, res, next) {
 });
 
 router.get('/:uuid', function (req, res, next) {
-    models.wallets.findOne({ where: { uuid: req.params.uuid }, include: [models.addresses] }).then(wallet => {
-        res.send({ wallet })
+    models.wallets.findOne({ where: { uuid: req.params.uuid }, include: [models.addresses, models.transactions] }).then(wallet => {
+        res.send(wallet)
     });
 });
 
-router.get('/:uuid/new_address', function (req, res, next) {
-    wallet = models.wallets.findOne({ where: { uuid: req.params.uuid } })
-        .then(wallet => {
-            const { address, private_key } = address_service.create_new_address(wallet.currency)
-            models.addresses.create({
-                walletId: wallet.id,
-                currency: wallet.currency,
-                address: address,
-                private_key: private_key //this is encrypted.
-            })
-                .then(address => {
-                    res.send({ address })
-                });
+router.get('/:uuid/new_address', async function (req, res, next) {
+    const wallet = await models.wallets.findOne({ where: { uuid: req.params.uuid } })
+    const { address, private_key } = address_service.create_new_address(wallet.currency)
+
+    models.addresses.create({
+        walletId: wallet.id,
+        currency: wallet.currency,
+        address: address,
+        private_key: private_key //this is encrypted.
+    })
+        .then(address => {
+            res.send(address)
         })
-        .catch()
+        .catch(error => res.send(error));
 });
 
 router.get('/:uuid/send', function (req, res, next) {
@@ -48,7 +47,7 @@ router.get('/:uuid/send', function (req, res, next) {
                 address: req.query.address,
                 category: 'send'
             }).then(transaction => {
-                res.send({ transaction });
+                res.send(transaction);
             })
         });
     }

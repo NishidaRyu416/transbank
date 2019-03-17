@@ -1,6 +1,4 @@
 var bitcore = require('bitcore-lib');
-var explorers = require('bitcore-explorers');
-var insight = new explorers.Insight('testnet');
 var bg = require('bignumber.js');
 require('dotenv').config();
 

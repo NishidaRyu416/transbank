@@ -32,7 +32,6 @@ const getTokenByName = (name) => {
     return new bluebird((resolve, reject) => {
         coins.findOne({ where: { name: name } })
             .then((coin) => {
-                console.log(coin)
                 resolve(coin)
             })
             .catch((error) => reject(error))
@@ -40,7 +39,7 @@ const getTokenByName = (name) => {
 }
 const getTokenBycontractAddress = (contractAddress) => {
     return new bluebird((resolve, reject) => {
-        coins.findOne({ where: { contractAddress: contractAddress } })
+        coins.findOne({ where: { contractAddress: "0xcab43c832D8d7aF0D9e5c20DB0FB43f55b67c05c" } })
             .then((coin) => {
                 console.log(coin)
                 resolve(coin)

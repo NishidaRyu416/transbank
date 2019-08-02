@@ -8,6 +8,31 @@ router.get('/', function (req, res, next) {
         res.send(coins)
     })
 });
+
+router.get('/:contractAddress', function (req, res, next) {
+    coin_service.getTokenBycontractAddress(toString(req.params.contractAddress)).then(coin => {
+        res.send(coin)
+    })
+});
+
+router.get('/getInfo', function (req, res, next) {
+    const { contractAddress, name } = req.query
+    console.log(contractAddress)
+    if (name) {
+        console.log(name)
+        coin_service.getTokenByName(name).then(coin => {
+            res.send(coin)
+        })
+    }
+    else if (contractAddress) {
+        coin_service.getTokenBycontractAddress(contractAddress).then(coin => {
+            res.send(coin)
+        })
+    }
+    else {
+        res.send('We do not support the coin/token you search for, otherwise, there is not such one.')
+    }
+})
 router.get('/isSupported', async function (req, res, next) {
     const { name, contractAddress } = req.query
     if (contractAddress) {
@@ -25,22 +50,7 @@ router.get('/names', async function (req, res, next) {
     const names = await coin_service.getAllSupportedCoinsNames()
     res.send(names)
 })
-router.get('/:contractAddress', async function (req, res, next) {
-    const coin = await models.coins.findOne({ where: { contractAddress: req.params.contractAddress } })
-    res.send(coin)
-});
-router.get('/getInfo', async function (req, res, next) {
-    const { contractAddress, name } = req.query
-    console.log(name)
-    if (name) {
-        const coin = await coin_service.getByName(name)
-        res.send(coin)
-    }
-    else if (contractAddress) {
-        const coin = await coin_service.getTokenBycontractAddress(contractAddress)
-        res.send(coin)
-    }
-})
+
 router.get('/new', function (req, res, next) {
     const { name, minimalConfirmations, fee, contractAddress } = req.query
     models.coins.create({

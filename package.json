@@ -6,7 +6,7 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
-    "axios": "^0.18.0",
+    "axios": "^0.21.1",
     "bignumber.js": "^7.2.1",
     "bitcore-lib": "^0.15.0",
     "bluebird": "^3.5.3",
